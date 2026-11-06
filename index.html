@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Jorgino ACTS - With Quotes</title>
+<style>
+*{box-sizing:border-box;font-family:sans-serif}
+body{margin:0;padding:14px;max-width:500px;margin:auto;background:#0a0a0a;color:#fff;min-height:100vh}
+.card{background:rgba(255,255,255,0.92);color:#000;padding:14px;border-radius:14px;margin:14px 0}
+button{background:#1a1a2e;color:white;border:none;padding:14px;border-radius:10px;width:100%;font-weight:bold}
+.lockBtn{background:#b00020;font-size:18px}
+.streakBox{background:linear-gradient(135deg,#ffd700,#ff8c00);color:#000;text-align:center;padding:12px;border-radius:14px;font-weight:bold}
+#lockScreen{
+  display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:9999;
+  flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;
+  background-size:cover; background-position:center; background-repeat:no-repeat;
+}
+#darkOverlay{position:absolute;top:0;left:0;width:100%;height:100%;background:linear-gradient(rgba(0,0,0,0.55),rgba(0,0,0,0.8));z-index:-1}
+#timer{font-size:72px;font-weight:bold;text-shadow:0 2px 12px #000}
+#stageName{font-size:32px;color:#ffd700;text-shadow:0 2px 8px #000; letter-spacing:2px}
+#verseBox{background:rgba(0,0,0,0.6);padding:12px;border-radius:12px;backdrop-filter:blur(4px);margin-top:10px;max-width:320px;border:1px solid rgba(255,215,0,0.3)}
+#songName{font-size:12px;color:#0ff;margin-top:6px}
+#quoteBox{
+  margin-top:14px; background:linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,140,0,0.15));
+  border-left:3px solid #ffd700; padding:10px 12px; border-radius:8px;
+  max-width:300px; backdrop-filter:blur(3px);
+}
+#quoteText{font-size:13px; font-style:italic; color:#ffe87a; line-height:1.4}
+#quoteAuthor{font-size:10px; color:#aaa; margin-top:4px; text-align:right}
+</style>
+</head>
+<body>
+<h2>🙏 Jorgino's Altar</h2>
+<div class="streakBox" id="streakBox">🔥 Streak: 0 days</div>
+<div class="card">
+<button class="lockBtn" onclick="startACTS()">🔒 START ACTS - SONGS + IMAGES + QUOTES</button>
+<audio id="worshipAudio"></audio>
+</div>
+
+<div id="lockScreen">
+<div id="darkOverlay"></div>
+<div id="stageName">ADORATION</div>
+<div id="timer">05:00</div>
+<div id="verseBox">
+<p id="verse"></p>
+<p id="songName"></p>
+</div>
+
+<p style="margin-top:10px; opacity:0.8">Step <span id="step">1</span>/4</p>
+
+<!-- MOTIVATIONAL QUOTE UNDER IT -->
+<div id="quoteBox">
+<p id="quoteText">"God is still writing your story - don't give up!"</p>
+<p id="quoteAuthor">- Keep Going</p>
+</div>
+
+<button onclick="nextStage()" style="width:auto;background:rgba(255,255,255,0.2);margin-top:12px; padding:10px 20px">Skip →</button>
+<button onclick="stopLock()" style="width:auto;background:rgba(200,0,0,0.7);margin-top:10px; padding:10px 20px">End Prayer</button>
+</div>
+
+<script>
+const acts=[
+{ 
+  n:"ADORATION", r:"Psalm 145:3", t:"Great is the Lord - All The Glory!", file:"adoration.mp3", bg:"adoration.jpg",
+  quote:"Worship before worry - God is bigger than what you're facing!", author:"Sarpong George"
+},
+{ 
+  n:"CONFESSION", r:"1 John 1:9", t:"Lord have mercy - Faith Hope Love", file:"confession.mp3", bg:"confession.jpg",
+  quote:"Your past does not define you - God's grace rewrites your story!", author:"Sarpong George"
+},
+{ 
+  n:"THANKSGIVING", r:"Psalm 107:1", t:"Thank You Jesus for Your sacrifice", file:"thanksgiving.mp3", bg:"thanksgiving.jpg",
+  quote:"Gratitude turns what you have into enough - Thank God always!", author:"Sarpong George"
+},
+{ 
+  n:"SUPPLICATION", r:"Jeremiah 29:11", t:"Never give up - Sunshine is coming!", file:"supplication.mp3", bg:"supplication.jpg",
+  quote:"Never give up! The darkest nights produce the brightest stars - Your breakthrough is coming!", author:"Sarpong George"
+}
+];
+
+function loadStreak(){
+let s=parseInt(localStorage.getItem('prayerStreak')||'0');
+let l=parseInt(localStorage.getItem('longestStreak')||'0');
+document.getElementById('streakBox').innerHTML=`🔥 Streak: ${s} day${s!=1?'s':''} | Best: ${l} ${s>=3?'🎉':''}`;
+}
+loadStreak();
+function updateStreak(){
+let today=new Date().toDateString(), last=localStorage.getItem('lastPrayerDate');
+if(last===today) return parseInt(localStorage.getItem('prayerStreak')||'0');
+let streak=parseInt(localStorage.getItem('prayerStreak')||'0'), longest=parseInt(localStorage.getItem('longestStreak')||'0');
+let y=new Date(); y.setDate(y.getDate()-1);
+if(last===y.toDateString()) streak++; else streak=1;
+if(streak>longest) longest=streak;
+localStorage.setItem('prayerStreak',streak); localStorage.setItem('longestStreak',longest); localStorage.setItem('lastPrayerDate',today);
+loadStreak(); return streak;
+}
+
+let cur=0, left=300, intv=null;
+const audio=document.getElementById('worshipAudio');
+const lockScreen=document.getElementById('lockScreen');
+
+function showStage(i){
+let s=acts[i];
+lockScreen.style.backgroundImage=`url('${s.bg}')`;
+document.getElementById('quoteText').innerText=`"${s.quote}"`;
+document.getElementById('quoteAuthor').innerText=`- ${s.author}`;
+document.getElementById('songName').innerText=`🎵 ${s.file}`;
+audio.pause(); audio.src=s.file; audio.load(); audio.loop=true; audio.volume=0.7;
+audio.play().catch(()=>{});
+}
+
+function startACTS(){ cur=0; doStage(); showStage(cur); lockScreen.style.display='flex'; document.documentElement.requestFullscreen&&document.documentElement.requestFullscreen(); }
+function doStage(){ let s=acts[cur]; left=300; document.getElementById('stageName').innerText=s.n; document.getElementById('verse').innerHTML=`<b>${s.r}</b><br>${s.t}`; document.getElementById('step').innerText=cur+1; clearInterval(intv); intv=setInterval(()=>{ left--; let m=String(Math.floor(left/60)).padStart(2,'0'), sec=String(left%60).padStart(2,'0'); document.getElementById('timer').innerText=m+":"+sec; if(left<=0) nextStage(); },1000); }
+function nextStage(){ cur++; if(cur>=4){ clearInterval(intv); audio.pause(); let st=updateStreak(); alert(`AMEN Jorgino! 🙏 All 4 done!\nStreak: ${st} day(s)`); stopLock(); return; } showStage(cur); doStage(); }
+function stopLock(){ clearInterval(intv); audio.pause(); lockScreen.style.display='none'; document.exitFullscreen&&document.exitFullscreen(); }
+</script>
+</body>
+</html>
